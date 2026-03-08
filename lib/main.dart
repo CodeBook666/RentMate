@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'dart:typed_data';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'dart:convert';
 import 'dart:async';
 
 void main() {
@@ -318,35 +316,92 @@ class RegisterScreen extends StatelessWidget {
 // =====================================================
 // SURVEY SCREEN
 // =====================================================
-class SurveyScreen extends StatelessWidget {
+class SurveyScreen extends StatefulWidget {
   const SurveyScreen({super.key});
+
+  @override
+  State<SurveyScreen> createState() => _SurveyScreenState();
+}
+
+class _SurveyScreenState extends State<SurveyScreen> {
+  // Logic to hold the selected values
+  final Map<String, String> _responses = {};
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: const Text(
-          "Preference Survey",
-          style: TextStyle(color: Colors.white),
+          "Personalize Your Stay",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
+        centerTitle: true,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildDropdown("Budget Range"),
-            _buildDropdown("Preferred Location"),
-            _buildDropdown("Room Type"),
-            const Spacer(),
+            const Text(
+              "Help us find the perfect match based on your lifestyle.",
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 25),
+
+            // 1. Financial Question
+            _buildDropdown("Monthly Budget Range", [
+              "Below Rs. 15,000",
+              "Rs. 15,000 - 30,000",
+              "Rs. 30,000 - 50,000",
+              "Above Rs. 50,000",
+            ]),
+
+            // 2. Location/Proximity Question
+            _buildDropdown("Priority Proximity", [
+              "Close to University",
+              "Close to Workplace",
+              "Near Public Transport",
+              "Quiet Residential Area",
+            ]),
+
+            // 3. Occupancy Type
+            _buildDropdown("Preferred Living Arrangement", [
+              "Single Room (Private)",
+              "Shared Room (Roommates)",
+              "Full Apartment/Annex",
+              "Studio",
+            ]),
+
+            // 4. Facilities (Important for IT students/Work from home)
+            _buildDropdown("Must-have Facility", [
+              "High-Speed Wi-Fi",
+              "Air Conditioning (AC)",
+              "24/7 Security/CCTV",
+              "Parking Space",
+            ]),
+
+            // 5. Gender Preference (Very common for boarding in SL)
+            _buildDropdown("Boarding Type", [
+              "Mixed Gender",
+              "Girls Only",
+              "Boys Only",
+            ]),
+
+            const SizedBox(height: 30),
+
             PrimaryButton(
-              text: "Submit",
-              icon: Icons.check_circle,
-              onPressed: () => Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const HomeScreen()),
-              ),
+              text: "Find Properties",
+              icon: Icons.search_rounded,
+              onPressed: () {
+                // Here you would eventually pass _responses to your recommendation logic
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const HomeScreen()),
+                );
+              },
             ),
             const SizedBox(height: 20),
           ],
@@ -355,25 +410,51 @@ class SurveyScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDropdown(String label) {
+  Widget _buildDropdown(String label, List<String> options) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
-      child: DropdownButtonFormField<String>(
-        dropdownColor: const Color(0xFF0D1B2A),
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(color: Colors.white70),
-          enabledBorder: OutlineInputBorder(
-            borderSide: const BorderSide(color: AppColors.teal),
-            borderRadius: BorderRadius.circular(12),
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.teal,
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
           ),
-        ),
-        items: const [
-          DropdownMenuItem(value: "1", child: Text("Option 1")),
-          DropdownMenuItem(value: "2", child: Text("Option 2")),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            dropdownColor: const Color(0xFF0D1B2A),
+            iconEnabledColor: AppColors.teal,
+            style: const TextStyle(color: Colors.white, fontSize: 15),
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 15,
+                vertical: 15,
+              ),
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.05),
+              enabledBorder: OutlineInputBorder(
+                borderSide: const BorderSide(color: Colors.white24),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: const BorderSide(color: AppColors.teal, width: 2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            items: options.map((String value) {
+              return DropdownMenuItem<String>(value: value, child: Text(value));
+            }).toList(),
+            onChanged: (newValue) {
+              setState(() {
+                _responses[label] = newValue!;
+              });
+            },
+          ),
         ],
-        onChanged: (value) {},
       ),
     );
   }
@@ -394,8 +475,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _screens = [
     HomeContentScreen(),
-    const RoommateMatchingScreen(),
-    const PaymentScreen(), // Using Dashboard for Payment/Profile placeholder
+    const RoommateSurveyScreen(),
+    const PaymentScreen(),
     const DashboardScreen(),
   ];
 
@@ -491,11 +572,11 @@ class PropertyCard extends StatelessWidget {
                 height: 160,
                 color: Colors.grey[900],
                 child: const Center(
-                  child: Icon(
+                  /* child: Icon(
                     Icons.broken_image,
                     color: Colors.white,
                     size: 50,
-                  ),
+                  ),*/
                 ),
               ),
             ),
@@ -790,6 +871,7 @@ class PropertyDetailsScreen extends StatelessWidget {
     );
   }
 }
+
 // =====================================================
 // DASHBOARD SCREEN
 // =====================================================
@@ -826,7 +908,7 @@ class DashboardScreen extends StatelessWidget {
           context,
           "Location Tracking",
           Icons.location_on,
-          const PublicTransportLocationScreen(),
+          const PublicTransportationScreen(),
         ),
         _dashTile(
           context,
@@ -1059,7 +1141,8 @@ class MaintenanceRequestScreen extends StatefulWidget {
   const MaintenanceRequestScreen({super.key});
 
   @override
-  State<MaintenanceRequestScreen> createState() => _MaintenanceRequestScreenState();
+  State<MaintenanceRequestScreen> createState() =>
+      _MaintenanceRequestScreenState();
 }
 
 class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
@@ -1111,7 +1194,10 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
           _selectedFiles.length >= 10
               ? "You have reached the maximum of 10 images."
               : "Some images were not added. A maximum of 10 images allowed.",
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
@@ -1128,7 +1214,9 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
           "RentMate",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        iconTheme: const IconThemeData(color: Color.fromARGB(255, 11, 209, 236)),
+        iconTheme: const IconThemeData(
+          color: Color.fromARGB(255, 11, 209, 236),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -1136,7 +1224,11 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
           children: [
             const Text(
               "Maintenance Request",
-              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 20),
 
@@ -1144,26 +1236,36 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
             _buildContainer(
               title: "Select the issue type",
               child: Column(
-                children: ["Water Problem", "Electricity", "Network Issue", "Other"].map((issue) {
-                  return RadioListTile(
-                    activeColor: const Color(0xFF26A69A),
-                    contentPadding: EdgeInsets.zero,
-                    title: issue == "Other"
-                        ? TextField(
-                            controller: _otherIssueController,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: const InputDecoration(
-                              hintText: "Specify here...",
-                              hintStyle: TextStyle(color: Colors.grey),
-                              isDense: true,
-                            ),
-                          )
-                        : Text(issue, style: const TextStyle(color: Colors.white)),
-                    value: issue,
-                    groupValue: _issueType,
-                    onChanged: (val) => setState(() => _issueType = val.toString()),
-                  );
-                }).toList(),
+                children:
+                    [
+                      "Water Problem",
+                      "Electricity",
+                      "Network Issue",
+                      "Other",
+                    ].map((issue) {
+                      return RadioListTile(
+                        activeColor: const Color(0xFF26A69A),
+                        contentPadding: EdgeInsets.zero,
+                        title: issue == "Other"
+                            ? TextField(
+                                controller: _otherIssueController,
+                                style: const TextStyle(color: Colors.white),
+                                decoration: const InputDecoration(
+                                  hintText: "Specify here...",
+                                  hintStyle: TextStyle(color: Colors.grey),
+                                  isDense: true,
+                                ),
+                              )
+                            : Text(
+                                issue,
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                        value: issue,
+                        groupValue: _issueType,
+                        onChanged: (val) =>
+                            setState(() => _issueType = val.toString()),
+                      );
+                    }).toList(),
               ),
             ),
 
@@ -1203,13 +1305,20 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
                       ),
                       child: Column(
                         children: [
-                          const Icon(Icons.add_a_photo_outlined, color: Colors.white, size: 40),
+                          const Icon(
+                            Icons.add_a_photo_outlined,
+                            color: Colors.white,
+                            size: 40,
+                          ),
                           const SizedBox(height: 10),
                           Text(
                             _selectedFiles.isEmpty
                                 ? "Click to browse images"
                                 : "${_selectedFiles.length} images selected",
-                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
@@ -1230,15 +1339,28 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
                             children: [
                               Container(
                                 width: 100,
-                                margin: const EdgeInsets.only(right: 12, top: 8),
+                                margin: const EdgeInsets.only(
+                                  right: 12,
+                                  top: 8,
+                                ),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: const Color(0xFF26A69A)),
+                                  border: Border.all(
+                                    color: const Color(0xFF26A69A),
+                                  ),
                                 ),
                                 clipBehavior: Clip.antiAlias,
                                 child: file.bytes != null
-                                    ? Image.memory(file.bytes!, fit: BoxFit.cover)
-                                    : const Center(child: Icon(Icons.image, color: Colors.white24)),
+                                    ? Image.memory(
+                                        file.bytes!,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : const Center(
+                                        child: Icon(
+                                          Icons.image,
+                                          color: Colors.white24,
+                                        ),
+                                      ),
                               ),
                               // Working Cross Button
                               Positioned(
@@ -1252,7 +1374,11 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
                                       shape: BoxShape.circle,
                                     ),
                                     padding: const EdgeInsets.all(4),
-                                    child: const Icon(Icons.close, color: Colors.white, size: 12),
+                                    child: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                      size: 12,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -1273,9 +1399,17 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF26A69A),
                 minimumSize: const Size(200, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text("Request", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              child: const Text(
+                "Request",
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             const SizedBox(height: 20),
           ],
@@ -1295,7 +1429,14 @@ class _MaintenanceRequestScreenState extends State<MaintenanceRequestScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 10),
           child,
         ],
@@ -1492,6 +1633,28 @@ class RoommateMatchingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0D1B2A),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.teal),
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+              (route) => false,
+            );
+          },
+        ),
+        title: const Text(
+          "RentMate",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
       body: Column(
         children: [
           const Padding(
@@ -1960,7 +2123,11 @@ class _OwnerVerificationScreenState extends State<OwnerVerificationScreen> {
         ),
         title: const Text(
           "RentMate",
-          style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       body: SingleChildScrollView(
@@ -1969,7 +2136,11 @@ class _OwnerVerificationScreenState extends State<OwnerVerificationScreen> {
           children: [
             const Text(
               "Owner Verification",
-              style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 25),
 
@@ -1979,24 +2150,73 @@ class _OwnerVerificationScreenState extends State<OwnerVerificationScreen> {
               alignment: Alignment.centerLeft,
               child: Padding(
                 padding: EdgeInsets.only(left: 10, bottom: 8),
-                child: Text("Enter Date Of Birth", style: TextStyle(color: Colors.white, fontSize: 14)),
+                child: Text(
+                  "Enter Date Of Birth",
+                  style: TextStyle(color: Colors.white, fontSize: 14),
+                ),
               ),
             ),
-            
+
             Row(
               children: [
-                Expanded(child: _buildDropdown("Day", List.generate(31, (i) => (i + 1).toString().padLeft(2, '0')), selectedDay, (val) => setState(() => selectedDay = val))),
+                Expanded(
+                  child: _buildDropdown(
+                    "Day",
+                    List.generate(
+                      31,
+                      (i) => (i + 1).toString().padLeft(2, '0'),
+                    ),
+                    selectedDay,
+                    (val) => setState(() => selectedDay = val),
+                  ),
+                ),
                 const SizedBox(width: 10),
-                Expanded(child: _buildDropdown("Month", ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], selectedMonth, (val) => setState(() => selectedMonth = val))),
+                Expanded(
+                  child: _buildDropdown(
+                    "Month",
+                    [
+                      'Jan',
+                      'Feb',
+                      'Mar',
+                      'Apr',
+                      'May',
+                      'Jun',
+                      'Jul',
+                      'Aug',
+                      'Sep',
+                      'Oct',
+                      'Nov',
+                      'Dec',
+                    ],
+                    selectedMonth,
+                    (val) => setState(() => selectedMonth = val),
+                  ),
+                ),
                 const SizedBox(width: 10),
-                Expanded(child: _buildDropdown("Year", List.generate(60, (i) => (1965 + i).toString()), selectedYear, (val) => setState(() => selectedYear = val))),
+                Expanded(
+                  child: _buildDropdown(
+                    "Year",
+                    List.generate(60, (i) => (1965 + i).toString()),
+                    selectedYear,
+                    (val) => setState(() => selectedYear = val),
+                  ),
+                ),
               ],
             ),
-            
+
             const SizedBox(height: 15),
-            _buildVerificationField("Enter Email Address", Icons.email_outlined),
-            _buildVerificationField("Enter Telephone Number", Icons.phone_outlined),
-            _buildVerificationField("Enter Home Address", Icons.location_on_outlined),
+            _buildVerificationField(
+              "Enter Email Address",
+              Icons.email_outlined,
+            ),
+            _buildVerificationField(
+              "Enter Telephone Number",
+              Icons.phone_outlined,
+            ),
+            _buildVerificationField(
+              "Enter Home Address",
+              Icons.location_on_outlined,
+            ),
 
             // 3. UPDATED: Multi-Image Upload Box
             GestureDetector(
@@ -2012,16 +2232,23 @@ class _OwnerVerificationScreenState extends State<OwnerVerificationScreen> {
                 child: Column(
                   children: [
                     Icon(
-                      _verificationImages.length < 2 ? Icons.upload_outlined : Icons.check_circle,
-                      color: _verificationImages.length < 2 ? Colors.white70 : Colors.teal,
+                      _verificationImages.length < 2
+                          ? Icons.upload_outlined
+                          : Icons.check_circle,
+                      color: _verificationImages.length < 2
+                          ? Colors.white70
+                          : Colors.teal,
                       size: 35,
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      _verificationImages.isEmpty 
-                          ? "Upload NIC or Passport (Front & Back)" 
+                      _verificationImages.isEmpty
+                          ? "Upload NIC or Passport (Front & Back)"
                           : "${_verificationImages.length} of 2 images attached",
-                      style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
@@ -2045,12 +2272,17 @@ class _OwnerVerificationScreenState extends State<OwnerVerificationScreen> {
                           margin: const EdgeInsets.only(right: 15, top: 10),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.teal.withOpacity(0.5)),
+                            border: Border.all(
+                              color: Colors.teal.withOpacity(0.5),
+                            ),
                           ),
                           clipBehavior: Clip.antiAlias,
-                          child: file.bytes != null 
+                          child: file.bytes != null
                               ? Image.memory(file.bytes!, fit: BoxFit.cover)
-                              : const Icon(Icons.description, color: Colors.white24),
+                              : const Icon(
+                                  Icons.description,
+                                  color: Colors.white24,
+                                ),
                         ),
                         // THE CROSS BUTTON
                         Positioned(
@@ -2059,9 +2291,16 @@ class _OwnerVerificationScreenState extends State<OwnerVerificationScreen> {
                           child: GestureDetector(
                             onTap: () => _removeImage(index),
                             child: Container(
-                              decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
                               padding: const EdgeInsets.all(4),
-                              child: const Icon(Icons.close, color: Colors.white, size: 14),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 14,
+                              ),
                             ),
                           ),
                         ),
@@ -2088,17 +2327,32 @@ class _OwnerVerificationScreenState extends State<OwnerVerificationScreen> {
                 onPressed: () {
                   if (_verificationImages.length < 2) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Please upload both Front and Back images"))
+                      const SnackBar(
+                        content: Text(
+                          "Please upload both Front and Back images",
+                        ),
+                      ),
                     );
                   } else {
-                    print("Submitting for verification with ${_verificationImages.length} images");
+                    print(
+                      "Submitting for verification with ${_verificationImages.length} images",
+                    );
                   }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF26A69A),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
                 ),
-                child: const Text("Verify", style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  "Verify",
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -2118,27 +2372,46 @@ class _OwnerVerificationScreenState extends State<OwnerVerificationScreen> {
           prefixIcon: Icon(icon, color: Colors.teal),
           hintText: hint,
           hintStyle: const TextStyle(color: Colors.white54),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: const BorderSide(color: Color(0xFF26A69A), width: 2)),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: const BorderSide(color: Colors.teal, width: 2)),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(25),
+            borderSide: const BorderSide(color: Color(0xFF26A69A), width: 2),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(25),
+            borderSide: const BorderSide(color: Colors.teal, width: 2),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildDropdown(String hint, List<String> items, String? value, ValueChanged<String?> onChanged) {
+  Widget _buildDropdown(
+    String hint,
+    List<String> items,
+    String? value,
+    ValueChanged<String?> onChanged,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(border: Border.all(color: const Color(0xFF26A69A), width: 2), borderRadius: BorderRadius.circular(25)),
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFF26A69A), width: 2),
+        borderRadius: BorderRadius.circular(25),
+      ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          hint: Text(hint, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          hint: Text(
+            hint,
+            style: const TextStyle(color: Colors.white54, fontSize: 12),
+          ),
           value: value,
           dropdownColor: const Color(0xFF0D1B2A),
           style: const TextStyle(color: Colors.white),
           icon: const Icon(Icons.arrow_drop_down, color: Colors.teal),
           isExpanded: true,
           onChanged: onChanged,
-          items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
+          items: items
+              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+              .toList(),
         ),
       ),
     );
@@ -2148,7 +2421,6 @@ class _OwnerVerificationScreenState extends State<OwnerVerificationScreen> {
 // =====================================================
 // ADD PROPERTY SCREEN
 // =====================================================
-
 class AddPropertyScreen extends StatefulWidget {
   const AddPropertyScreen({super.key});
 
@@ -2157,20 +2429,22 @@ class AddPropertyScreen extends StatefulWidget {
 }
 
 class _AddPropertyScreenState extends State<AddPropertyScreen> {
-
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
 
   String? _selectedRoomType;
   final List<String> _roomTypes = ["Single Room", "Shared Room"];
-  final List<String> _facilitiesList = ["Wi-Fi", "Meals", "AC", "Attached Bathroom"];
+  final List<String> _facilitiesList = [
+    "Wi-Fi",
+    "Meals",
+    "AC",
+    "Attached Bathroom",
+  ];
   final Set<String> _selectedFacilities = {};
 
-  // 1. Updated: Use a List to manage multiple files
   final List<PlatformFile> _selectedFiles = [];
 
-  // 2. Updated: Pick logic with 10-image limit
   Future<void> _pickImages() async {
     if (_selectedFiles.length >= 10) {
       _showLimitSnackBar();
@@ -2217,7 +2491,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   @override
   Widget build(BuildContext context) {
     final BoxDecoration inputDecoration = BoxDecoration(
-      color: Colors.transparent,
+      color: const Color.fromARGB(0, 10, 227, 227),
       border: Border.all(color: Colors.teal, width: 2),
       borderRadius: BorderRadius.circular(20),
     );
@@ -2225,9 +2499,15 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0D1B2A),
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 12, 29, 48),
-        title: const Text("RentMate", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        centerTitle: true,
+        backgroundColor: const Color.fromARGB(255, 17, 38, 63),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.teal),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "RentMate",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
@@ -2238,13 +2518,17 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
             _buildTextField(_titleController, "Enter Title", inputDecoration),
 
             _buildLabel("Location"),
-            _buildTextField(_locationController, "Enter Location", inputDecoration),
+            _buildTextField(
+              _locationController,
+              "Enter Location",
+              inputDecoration,
+            ),
 
             _buildLabel("Price per Month"),
             _buildPriceField(inputDecoration),
 
             _buildLabel("Upload Images (Max 10)"),
-            
+
             // 3. Updated: Interactive Upload Box
             GestureDetector(
               onTap: _pickImages,
@@ -2254,11 +2538,15 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                 decoration: inputDecoration,
                 child: Column(
                   children: [
-                    const Icon(Icons.add_a_photo_outlined, color: Colors.white, size: 40),
+                    const Icon(
+                      Icons.add_a_photo_outlined,
+                      color: Colors.white,
+                      size: 40,
+                    ),
                     const SizedBox(height: 10),
                     Text(
-                      _selectedFiles.isEmpty 
-                          ? "Select Property Images" 
+                      _selectedFiles.isEmpty
+                          ? "Select Property Images"
                           : "${_selectedFiles.length} of 10 selected",
                       style: const TextStyle(color: Colors.white70),
                     ),
@@ -2284,12 +2572,19 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                           margin: const EdgeInsets.only(right: 12, top: 8),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(15),
-                            border: Border.all(color: Colors.teal.withOpacity(0.5)),
+                            border: Border.all(
+                              color: Colors.teal.withOpacity(0.5),
+                            ),
                           ),
                           clipBehavior: Clip.antiAlias,
                           child: file.bytes != null
                               ? Image.memory(file.bytes!, fit: BoxFit.cover)
-                              : const Center(child: Icon(Icons.image, color: Colors.white24)),
+                              : const Center(
+                                  child: Icon(
+                                    Icons.image,
+                                    color: Colors.white24,
+                                  ),
+                                ),
                         ),
                         // 5. THE CROSS BUTTON
                         Positioned(
@@ -2303,7 +2598,11 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                                 shape: BoxShape.circle,
                               ),
                               padding: const EdgeInsets.all(4),
-                              child: const Icon(Icons.close, color: Colors.white, size: 14),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 14,
+                              ),
                             ),
                           ),
                         ),
@@ -2313,12 +2612,20 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
                 ),
               ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 40),
             Row(
               children: [
-                Expanded(child: _buildActionButton("Cancel", Colors.grey, () => Navigator.pop(context))),
+                Expanded(
+                  child: _buildActionButton(
+                    "Cancel",
+                    Colors.teal,
+                    () => Navigator.pop(context),
+                  ),
+                ),
                 const SizedBox(width: 15),
-                Expanded(child: _buildActionButton("Submit", Colors.teal, () {})),
+                Expanded(
+                  child: _buildActionButton("Submit", Colors.teal, () {}),
+                ),
               ],
             ),
           ],
@@ -2327,37 +2634,75 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     );
   }
 
-  // Reusable Widgets (Condensed for brevity)
   Widget _buildLabel(String text) => Padding(
-        padding: const EdgeInsets.only(top: 15, bottom: 8),
-        child: Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-      );
+    padding: const EdgeInsets.only(top: 15, bottom: 8),
+    child: Text(
+      text,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+    ),
+  );
 
-  Widget _buildTextField(TextEditingController controller, String hint, BoxDecoration deco) => Container(
-        decoration: deco,
-        padding: const EdgeInsets.symmetric(horizontal: 15),
-        child: TextField(
-          controller: controller,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(hintText: hint, hintStyle: const TextStyle(color: Colors.grey), border: InputBorder.none),
-        ),
-      );
+  Widget _buildTextField(
+    TextEditingController controller,
+    String hint,
+    BoxDecoration deco,
+  ) => Container(
+    decoration: deco,
+    padding: const EdgeInsets.symmetric(horizontal: 15),
+    child: TextField(
+      controller: controller,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.grey),
+        border: InputBorder.none,
+      ),
+    ),
+  );
 
   Widget _buildPriceField(BoxDecoration deco) => Container(
-        decoration: deco,
-        child: Row(
-          children: [
-            const Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Text("LKR", style: TextStyle(color: Colors.white))),
-            Expanded(child: TextField(controller: _priceController, keyboardType: TextInputType.number, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(hintText: "0.00", hintStyle: TextStyle(color: Colors.grey), border: InputBorder.none))),
-          ],
+    decoration: deco,
+    child: Row(
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 15),
+          child: Text("LKR", style: TextStyle(color: Colors.white)),
         ),
-      );
+        Expanded(
+          child: TextField(
+            controller: _priceController,
+            keyboardType: TextInputType.number,
+            style: const TextStyle(color: Colors.white),
+            decoration: const InputDecoration(
+              hintText: "0.00",
+              hintStyle: TextStyle(color: Colors.grey),
+              border: InputBorder.none,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 
-  Widget _buildActionButton(String label, Color color, VoidCallback onPressed) => ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(backgroundColor: color, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25))),
-        child: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-      );
+  Widget _buildActionButton(
+    String label,
+    Color color,
+    VoidCallback onPressed,
+  ) => ElevatedButton(
+    onPressed: onPressed,
+    style: ElevatedButton.styleFrom(
+      backgroundColor: color,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+    ),
+    child: Text(
+      label,
+      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+    ),
+  );
 }
 
 // =====================================================
@@ -2367,10 +2712,12 @@ class PublicTransportationScreen extends StatefulWidget {
   const PublicTransportationScreen({super.key});
 
   @override
-  State<PublicTransportationScreen> createState() => _PublicTransportationScreenState();
+  State<PublicTransportationScreen> createState() =>
+      _PublicTransportationScreenState();
 }
 
-class _PublicTransportationScreenState extends State<PublicTransportationScreen> {
+class _PublicTransportationScreenState
+    extends State<PublicTransportationScreen> {
   final Completer<GoogleMapController> _controller = Completer();
   final TextEditingController _searchController = TextEditingController();
 
@@ -2415,12 +2762,14 @@ class _PublicTransportationScreenState extends State<PublicTransportationScreen>
     if (locationName.isEmpty) return;
 
     // Simulate finding a new location (In production, use Geocoding API)
-    final LatLng newLocation = LatLng(6.9150, 79.8700); 
+    final LatLng newLocation = LatLng(6.9150, 79.8700);
 
     final GoogleMapController controller = await _controller.future;
-    controller.animateCamera(CameraUpdate.newCameraPosition(
-      CameraPosition(target: newLocation, zoom: 15.0),
-    ));
+    controller.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(target: newLocation, zoom: 15.0),
+      ),
+    );
 
     // Update markers to be "near" the new search result
     _initializeMarkers(newLocation);
@@ -2440,7 +2789,11 @@ class _PublicTransportationScreenState extends State<PublicTransportationScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF00C853), size: 30),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Color(0xFF00C853),
+            size: 30,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -2539,7 +2892,8 @@ class _PublicTransportationScreenState extends State<PublicTransportationScreen>
     required String markerId,
   }) {
     // Get the marker position for this specific tile
-    final LatLng mapPosition = _markers[MarkerId(markerId)]?.position ?? _initialCenter;
+    final LatLng mapPosition =
+        _markers[MarkerId(markerId)]?.position ?? _initialCenter;
 
     return Container(
       decoration: deco,
@@ -2552,15 +2906,22 @@ class _PublicTransportationScreenState extends State<PublicTransportationScreen>
               const SizedBox(width: 15),
               Text(
                 title,
-                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          Text(walkTime, style: const TextStyle(color: Colors.white, fontSize: 16)),
+          Text(
+            walkTime,
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+          ),
           Text(distance, style: const TextStyle(color: Colors.grey)),
           const SizedBox(height: 12),
-          
+
           // Address/Destination Label
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -2574,7 +2935,7 @@ class _PublicTransportationScreenState extends State<PublicTransportationScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    "To $destination", 
+                    "To $destination",
                     style: const TextStyle(color: Colors.white),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -2592,7 +2953,10 @@ class _PublicTransportationScreenState extends State<PublicTransportationScreen>
               borderRadius: BorderRadius.circular(10),
               child: GoogleMap(
                 mapType: MapType.normal,
-                initialCameraPosition: CameraPosition(target: mapPosition, zoom: 15.0),
+                initialCameraPosition: CameraPosition(
+                  target: mapPosition,
+                  zoom: 15.0,
+                ),
                 myLocationEnabled: true,
                 myLocationButtonEnabled: false,
                 zoomControlsEnabled: false,
@@ -2602,10 +2966,171 @@ class _PublicTransportationScreenState extends State<PublicTransportationScreen>
                   }
                 },
                 markers: {
-                  if (_markers.containsKey(MarkerId(markerId))) _markers[MarkerId(markerId)]!,
+                  if (_markers.containsKey(MarkerId(markerId)))
+                    _markers[MarkerId(markerId)]!,
                 },
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =====================================================
+// ROOMMATE SURVEY SCREEN
+// =====================================================
+class RoommateSurveyScreen extends StatefulWidget {
+  const RoommateSurveyScreen({super.key});
+
+  @override
+  State<RoommateSurveyScreen> createState() => _RoommateSurveyScreenState();
+}
+
+class _RoommateSurveyScreenState extends State<RoommateSurveyScreen> {
+  final Map<String, String> _roommatePrefs = {};
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          "Roommate Matching",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Tell us about your lifestyle to find your perfect match.",
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 25),
+
+            // 1. Social Personality
+            _buildSurveyDropdown("Social Energy", [
+              "Introvert (Keep to myself)",
+              "Extrovert (Love socializing)",
+              "Ambivert (Balanced)",
+            ]),
+
+            // 2. Dietary Habits
+            _buildSurveyDropdown("Dietary Preference", [
+              "Vegetarian",
+              "Non-Vegetarian",
+              "Vegan",
+            ]),
+
+            // 3. Smoking Habits
+            _buildSurveyDropdown("Smoking Habit", [
+              "Non-Smoker",
+              "Occasional Smoker",
+              "Regular Smoker",
+            ]),
+
+            // 4. Sleep Cycle (Crucial for roommates)
+            _buildSurveyDropdown("Sleep Schedule", [
+              "Early Bird (Morning person)",
+              "Night Owl (Late sleeper)",
+              "Flexible",
+            ]),
+
+            // 5. Cleanliness Standard
+            _buildSurveyDropdown("Cleanliness Level", [
+              "Neat Freak (Everything must be tidy)",
+              "Casual (Clean but relaxed)",
+              "Messy but organized",
+            ]),
+
+            // 6. Guests/Visitors
+            _buildSurveyDropdown("Guest Policy Preference", [
+              "No Guests Allowed",
+              "Occasional Daytime Guests",
+              "Frequent Guests/Sleepovers",
+            ]),
+
+            // 7. Academic/Study Focus
+            _buildSurveyDropdown("Primary Activity", [
+              "Heavy Studying (Need silence)",
+              "WFH / Online Classes",
+              "Active Lifestyle (Hardly at home)",
+            ]),
+
+            const SizedBox(height: 30),
+
+            PrimaryButton(
+              text: "Find Matches",
+              icon: Icons.people_outline,
+              onPressed: () {
+                // Logic to process roommate matching
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const RoommateMatchingScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSurveyDropdown(String label, List<String> options) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.teal,
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            dropdownColor: const Color(
+              0xFF1D2D3D,
+            ), // Slightly lighter for the dropdown menu
+            iconEnabledColor: AppColors.teal,
+            style: const TextStyle(color: Colors.white, fontSize: 15),
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 15,
+                vertical: 15,
+              ),
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.05),
+              enabledBorder: OutlineInputBorder(
+                borderSide: const BorderSide(color: Colors.white24),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: const BorderSide(color: AppColors.teal, width: 2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            items: options.map((String value) {
+              return DropdownMenuItem<String>(value: value, child: Text(value));
+            }).toList(),
+            onChanged: (newValue) {
+              setState(() {
+                _roommatePrefs[label] = newValue!;
+              });
+            },
           ),
         ],
       ),
